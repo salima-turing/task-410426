@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Distributed Branch Prediction Simulator</title>
+</head>
+<body>
+<h1>Distributed Branch Prediction Simulator</h1>
+<select id="algorithmSelect">
+    <option value="random">Random</option>
+    <option value="weighted">Weighted</option>
+</select>
+<input type="number" id="iterationsInput" placeholder="Iterations" value="10000">
+<button onclick="startSimulation()">Start Simulation</button>
+
+<pre id="log"></pre>
+
+<script>
+    const ws = new WebSocket('ws://localhost:8080');
+
+    ws.onopen = () => {
+        console.log('Connected to server');
+    };
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        document.getElementById('log').textContent += `${JSON.stringify(data, null, 2)}\n`;
+    };
+
+    ws.onclose = () => {
+        console.log('Connection closed');
+    };
+
+    function startSimulation() {
+        const algorithm = document.getElementById('algorithmSelect').value;
+        const iterations = parseInt(document.getElementById('iterationsInput').value);
+
+        if (!isNaN(iterations) && iterations > 0) {
+            ws.send(JSON.stringify({
+                type: 'start_simulation',
+                algorithm,
+                iterations
+            }));
+        } else {
+            alert('Please enter a valid number of iterations.');
+        }
+    }
+</script>
+</body>
+</html>
