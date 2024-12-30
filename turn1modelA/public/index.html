@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branch Prediction Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h1>Branch Prediction Simulator</h1>
+<canvas id="accuracyChart" width="400" height="200"></canvas>
+<script>
+    const ws = new WebSocket('ws://localhost:8080');
+    const metrics = {
+        correctPredictions: 0,
+        totalPredictions: 0,
+        accuracy: []
+    };
+
+    const ctx = document.getElementById('accuracyChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Prediction Accuracy (%)',
+                data: [],
+                borderColor: 'rgba(75, 192, 192, 1)',
+                fill: false
+            }]
+        }
+    });
+
+    const simulateBranchPrediction = () => {
+        const iterations = 100;
+        const probability = 0.9; // Accuracy of algorithm
+        for (let i = 0; i < iterations; i++) {
+            const input = Math.random() < 0.5; // Random true/false decision
+            const predicted = Math.random() < probability ? input : !input;
+
+            metrics.totalPredictions++;
+            if (predicted === input) {
+                metrics.correctPredictions++;
+            }
+        }
+        const accuracy = (metrics.correctPredictions / metrics.totalPredictions) * 100;
+        ws.send(JSON.stringify({ accuracy: accuracy, timestamp: new Date().toISOString() }));
+    };
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        updateChart(data);
+    };
+
+    const updateChart = (data) => {
+        const newAccuracy = (data[data.length - 1].accuracy).toFixed(2);
+        metrics.accuracy.push(newAccuracy);
+        chart.data.labels.push(new Date().toLocaleTimeString());
+        chart.data.datasets[0].data.push(newAccuracy);
+        chart.update();
+    };
+
+    // Simulate every second
+    setInterval(simulateBranchPrediction, 1000);
+</script>
+</body>
+</html>
